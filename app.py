@@ -1,29 +1,76 @@
+"""Streamlit entry point for Magnetism Lab."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
 import streamlit as st
-from modules import right_hand_rule, wire_field, charged_particle, practice
 
-st.set_page_config(page_title="Magnetism Lab", page_icon="🧲", layout="wide")
-st.title("🧲 Magnetism Lab")
-st.caption("Interactive E&M simulations for magnetic fields, right-hand rules, and charged particle motion.")
+from modules.component_loader import render_custom_app
 
-page = st.sidebar.radio("Navigate", ["Home", "Right-Hand Rule", "Field Around a Wire", "Charged Particle Motion", "Practice Mode"])
 
-if page == "Home":
-    st.header("Learn magnetism by seeing it move")
-    st.write("Magnetism Lab is a freshman-level E&M learning platform built around visualizations, sliders, and practice questions.")
-    c1, c2, c3 = st.columns(3)
-    c1.subheader("Right-Hand Rule")
-    c1.write("Practice force directions using F = q(v × B).")
-    c2.subheader("Wire Fields")
-    c2.write("Explore circular magnetic fields around current-carrying wires.")
-    c3.subheader("Particle Motion")
-    c3.write("Simulate charged particles curving in uniform magnetic fields.")
-    st.markdown("### Concepts covered")
-    st.write("Cross products, magnetic force, field lines, circular motion, cyclotron period, and beginner E&M intuition.")
-elif page == "Right-Hand Rule":
-    right_hand_rule.render()
-elif page == "Field Around a Wire":
-    wire_field.render()
-elif page == "Charged Particle Motion":
-    charged_particle.render()
-else:
-    practice.render()
+APP_DIR = Path(__file__).parent
+
+
+st.set_page_config(
+    page_title="Magnetism Lab",
+    page_icon="M",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+
+def hide_streamlit_chrome() -> None:
+    """Use Streamlit as a deployment shell for the custom simulator UI."""
+    st.markdown(
+        """
+        <style>
+        #MainMenu,
+        header,
+        footer,
+        [data-testid="stSidebar"],
+        [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+
+        html,
+        body,
+        .stApp {
+            background: #070A12;
+            overflow: hidden;
+        }
+
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"],
+        .main {
+            background: #070A12;
+        }
+
+        .main .block-container {
+            max-width: none;
+            padding: 0;
+        }
+
+        [data-testid="stVerticalBlock"],
+        [data-testid="stElementContainer"] {
+            gap: 0 !important;
+        }
+
+        iframe {
+            display: block;
+            border: 0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def main() -> None:
+    """Render Magnetism Lab."""
+    hide_streamlit_chrome()
+    render_custom_app(APP_DIR / "custom_app.html")
+
+
+if __name__ == "__main__":
+    main()
