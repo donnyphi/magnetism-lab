@@ -9,9 +9,10 @@ from utils.plotting import plot_field_vs_distance, plot_wire_field
 
 
 def render() -> None:
-    ui.section_header(
-        "Magnetic Field Around a Wire",
+    ui.page_hero(
+        "🧲", "Magnetic Field Around a Wire",
         "A long straight current makes circular magnetic field lines.",
+        theme="green",
     )
     ui.formula_card(
         "Field around a long straight wire",
@@ -19,77 +20,89 @@ def render() -> None:
         "Field strength grows with current I and shrinks with distance r.",
     )
 
-    ui.callout(
-        "Dot / cross notation shows 3D direction on flat paper:<br>"
-        "⊙ a <b>dot</b> is an arrow tip coming <b>toward you</b> (current out of "
-        "the page).<br>"
-        "⊗ a <b>cross</b> is an arrow tail going <b>away from you</b> (current "
-        "into the page).",
-        kind="intuition", title="Reading dot / cross notation",
-    )
+    # --- Dot / cross notation -------------------------------------------
+    ui.section_header("Reading dot / cross notation", eyebrow="3D on flat paper")
+    ui.card_grid([
+        {"icon": "⊙", "title": "Dot — out of the page",
+         "body": "A dot is the tip of an arrow flying toward you. The current "
+                 "comes out of the page; the field circulates counter-clockwise."},
+        {"icon": "⊗", "title": "Cross — into the page",
+         "body": "A cross is the tail of an arrow flying away. The current goes "
+                 "into the page; the field circulates clockwise."},
+    ], wide=True)
 
     # --- Inputs ----------------------------------------------------------
-    ui.section_header("Set up the wire")
-    c1, c2 = st.columns(2)
-    current = c1.slider("Current I (A)", 0.1, 20.0, 5.0)
-    radius = c2.slider("Distance r from wire (m)", 0.01, 5.0, 1.0)
-    direction = st.radio("Current direction", ["out of page", "into page"],
-                         horizontal=True)
-
-    circulation = "counter-clockwise" if direction == "out of page" else "clockwise"
-    ui.summary_chips([
-        ("Current", f"{current:.1f} A"),
-        ("Distance", f"{radius:.2f} m"),
-        ("Direction", "⊙ out of page" if direction == "out of page" else "⊗ into page"),
-        ("Field circulates", circulation),
-    ])
+    ui.section_header("Set up the wire", eyebrow="Simulator")
+    with ui.control_panel():
+        c1, c2 = st.columns(2)
+        current = c1.slider("Current I (A)", 0.1, 20.0, 5.0)
+        radius = c2.slider("Distance r from wire (m)", 0.01, 5.0, 1.0)
+        direction = st.radio("Current direction", ["out of page", "into page"],
+                             horizontal=True)
+        circulation = ("counter-clockwise" if direction == "out of page"
+                       else "clockwise")
+        ui.summary_chips([
+            ("Current", f"{current:.1f} A"),
+            ("Distance", f"{radius:.2f} m"),
+            ("Direction",
+             "⊙ out of page" if direction == "out of page" else "⊗ into page"),
+            ("Circulates", circulation),
+        ])
 
     B = wire_field_strength(current, radius)
-    st.metric("Magnetic field strength B", f"{B * 1e6:.3f} µT", help=f"{B:.3e} T")
+    ui.stat_cards([
+        {"label": "Field strength B", "value": f"{B * 1e6:.3f} µT",
+         "sub": f"{B:.2e} T at r = {radius:.2f} m"},
+    ])
 
-    with ui.plot_card("Field lines around the wire",
-                      "Arrows show the circulation direction of B."):
+    with ui.plot_shell("Field lines around the wire",
+                       "Arrows show the circulation direction of B."):
         st.pyplot(plot_wire_field(direction))
 
-    # --- Distance scaling mini-experiment --------------------------------
-    ui.section_header(
-        "Distance scaling experiment",
-        "Keep the current fixed and watch B shrink as you move away.",
-    )
-    cols = st.columns(3)
-    for col, factor in zip(cols, (1, 2, 3)):
-        b_here = wire_field_strength(current, radius * factor)
-        label = "B at r" if factor == 1 else f"B at {factor}r"
-        col.metric(label, f"{b_here * 1e6:.3f} µT")
-    ui.callout(
+    # --- Distance scaling experiment ------------------------------------
+    ui.section_header("Distance scaling experiment", eyebrow="The 1/r law",
+                      subtitle="Keep the current fixed and watch B shrink as you "
+                      "move away.")
+    ui.stat_cards([
+        {"label": "B at r", "value": f"{wire_field_strength(current, radius) * 1e6:.2f} µT",
+         "variant": "cool"},
+        {"label": "B at 2r", "value": f"{wire_field_strength(current, radius * 2) * 1e6:.2f} µT",
+         "variant": "alt"},
+        {"label": "B at 3r", "value": f"{wire_field_strength(current, radius * 3) * 1e6:.2f} µT",
+         "variant": "slate"},
+    ])
+    ui.callout_card(
         "Because <b>B ∝ 1/r</b>, doubling the distance <b>halves</b> the field "
         "and tripling it cuts the field to <b>one third</b>. It's a steady "
         "falloff, not a sudden cutoff.",
         kind="why",
     )
-    with ui.plot_card("B versus distance",
-                      "The 1/r curve with r, 2r and 3r marked."):
+    with ui.plot_shell("B versus distance",
+                       "The 1/r curve with r, 2r and 3r marked."):
         st.pyplot(plot_field_vs_distance(current))
 
-    # --- Interactive question -------------------------------------------
-    ui.section_header("Quick check")
+    # --- Quick check -----------------------------------------------------
+    ui.section_header("Quick check", eyebrow="Test yourself")
     answer = st.radio(
         "If the distance from the wire doubles, what happens to the magnetic field?",
         ["It doubles", "It halves", "It stays the same", "It quadruples"],
         index=None, key="wire_q",
     )
-    if answer:
-        if answer == "It halves":
-            st.success("✅ Correct! B ∝ 1/r, so doubling r halves B.")
-        else:
-            st.error("❌ Not quite. Since B = μ₀I/(2πr), doubling r halves B.")
+    if answer == "It halves":
+        ui.result_card(True, "B ∝ 1/r, so doubling r halves B.")
+    elif answer is not None:
+        ui.result_card(False, "Since B = μ₀I/(2πr), doubling r <b>halves</b> B.")
 
     # --- Edge case -------------------------------------------------------
-    ui.intuition_check(
-        "What happens right at the wire (r → 0)?",
-        "The formula **B = μ₀I/(2πr)** blows up to infinity as r → 0, which is "
-        "why distance can't be zero. In reality a wire has a finite thickness, "
-        "and **inside** the wire the field actually grows *linearly* from zero at "
-        "the center. The ideal formula only applies **outside** the wire.",
-        key="wire_edge",
+    ui.callout_card(
+        "The formula <b>B = μ₀I/(2πr)</b> blows up to infinity as r → 0, which "
+        "is why distance can't be zero. A real wire has finite thickness, and "
+        "<b>inside</b> the wire the field grows linearly from zero at the center. "
+        "The ideal formula only applies <b>outside</b> the wire.",
+        kind="edge", title="Edge case: r → 0",
     )
+
+    ui.divider()
+    ui.section_header("Next up")
+    ui.next_module_cta("Continue to Charged Particle Motion  →",
+                       "🌀 Charged Particle Motion")

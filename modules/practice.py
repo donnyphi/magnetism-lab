@@ -225,25 +225,26 @@ QUESTIONS = [
         "charge travels in a straight line.", "Lorentz force"),
 ]
 
-DIFFICULTY_BADGE = {"Easy": "🟢 Easy", "Medium": "🟡 Medium", "Challenge": "🔴 Challenge"}
-
-
 def render() -> None:
-    ui.section_header(
-        "Practice Mode",
-        f"{len(QUESTIONS)} questions across five topics. Predict, use hints if "
-        "you need them, and track your mastery.",
+    ui.page_hero(
+        "🎯", "Practice Mode",
+        f"{len(QUESTIONS)} questions across five topics — predict, use hints, "
+        "and track your mastery.",
+        theme="amber",
     )
 
     _init_state()
+    ui.section_header("Your progress", eyebrow="Dashboard")
     _render_scoreboard()
 
     # --- Filters ---------------------------------------------------------
+    ui.section_header("Questions", eyebrow="Problem set")
     topics = ["All topics"] + sorted({q["topic"] for q in QUESTIONS})
     difficulties = ["All", "Easy", "Medium", "Challenge"]
-    f1, f2 = st.columns(2)
-    topic_filter = f1.selectbox("Filter by topic", topics)
-    diff_filter = f2.selectbox("Filter by difficulty", difficulties)
+    with ui.control_panel():
+        f1, f2 = st.columns(2)
+        topic_filter = f1.selectbox("Filter by topic", topics)
+        diff_filter = f2.selectbox("Filter by difficulty", difficulties)
 
     shown = [
         (i, q) for i, q in enumerate(QUESTIONS)
@@ -251,11 +252,12 @@ def render() -> None:
         and (diff_filter == "All" or q["difficulty"] == diff_filter)
     ]
     if not shown:
-        ui.note("No questions match those filters. Try widening them.")
+        ui.callout_card("No questions match those filters. Try widening them.",
+                        kind="info")
     for i, q in shown:
         _render_question(i, q)
 
-    st.markdown("---")
+    ui.divider()
     _render_summary()
     if st.button("Reset session"):
         _reset_state()
@@ -314,57 +316,56 @@ def _render_scoreboard() -> None:
 
 def _render_question(idx: int, q: dict) -> None:
     prior = st.session_state.p_results.get(idx)
-    mark = "" if prior is None else (" ✅" if prior else " ❌")
-    header = f"{DIFFICULTY_BADGE[q['difficulty']]} · {q['topic']} — {q['q']}{mark}"
+    mark = "" if prior is None else ("   ✅" if prior else "   ❌")
+    qtype = "Numeric" if q["type"] == "num" else None
 
-    with st.expander(header):
-        ui.question_badges(q["difficulty"], q["topic"],
-                           extra="Numeric" if q["type"] == "num" else None)
-        st.markdown(f"**{q['q']}**")
-
+    with ui.practice_question_card(q["difficulty"], q["topic"], q["q"],
+                                   qtype=qtype, mark=mark):
         # Two-tier hint system.
         h1, h2 = st.columns(2)
         if h1.button("💡 Hint 1 (intuition)", key=f"hint1_{idx}"):
-            st.info(q["hint1"])
+            ui.hint_card(q["hint1"], label="Intuition")
         if h2.button("📐 Hint 2 (setup)", key=f"hint2_{idx}"):
-            st.info(q["hint2"])
+            ui.hint_card(q["hint2"], label="Setup")
 
         if q["type"] == "mc":
             choice = st.radio("Choose one", q["choices"], index=None,
                               key=f"ans_{idx}")
-            if st.button("Submit", key=f"submit_{idx}"):
+            if st.button("Submit", key=f"submit_{idx}", type="primary"):
                 if choice is None:
-                    st.warning("Pick an answer first.")
+                    ui.callout_card("Pick an answer first.", kind="mistake",
+                                    title="Hold on")
                 else:
                     _grade(idx, q, choice == q["a"])
         else:  # numeric
             val = st.number_input(f"Your answer ({q['unit']})", value=None,
                                   format="%.4f", key=f"ans_{idx}")
-            if st.button("Submit", key=f"submit_{idx}"):
+            if st.button("Submit", key=f"submit_{idx}", type="primary"):
                 if val is None:
-                    st.warning("Enter a number first.")
+                    ui.callout_card("Enter a number first.", kind="mistake",
+                                    title="Hold on")
                 else:
                     _grade(idx, q, abs(val - q["a"]) <= q["tol"])
 
 
 def _grade(idx: int, q: dict, correct: bool) -> None:
     _record(idx, correct)
-    if q["type"] == "num":
-        answer_text = f"{q['a']:.3f} {q['unit']}"
-    else:
-        answer_text = q["a"]
+    answer_text = f"{q['a']:.3f} {q['unit']}" if q["type"] == "num" else q["a"]
     if correct:
-        st.success(f"✅ Correct! {q['exp']}")
+        ui.result_card(True, q["exp"], concept=q["concept"])
     else:
-        st.error(f"❌ Not quite. The answer is **{answer_text}**. {q['exp']}")
-    st.caption(f"Related concept: **{q['concept']}**")
+        ui.result_card(False, f"The answer is <b>{answer_text}</b>. {q['exp']}",
+                       concept=q["concept"])
 
 
 def _render_summary() -> None:
     results = st.session_state.p_results
     if not results:
-        ui.note("Answer a few questions to unlock your <b>session summary</b> — "
-                "your strongest and weakest topics, plus what to review next.")
+        ui.callout_card(
+            "Answer a few questions to unlock your <b>session summary</b> — your "
+            "strongest and weakest topics, plus what to review next.",
+            kind="info", title="Session summary",
+        )
         return
 
     # Per-topic accuracy.
@@ -376,12 +377,12 @@ def _render_summary() -> None:
         if correct:
             s[0] += 1
 
-    ui.section_header("Session summary")
-    rows_topic, rows_acc = [], []
-    for topic, (c, n) in sorted(stats.items()):
-        rows_topic.append(topic)
-        rows_acc.append(f"{c}/{n}  ({c / n * 100:.0f}%)")
-    st.table({"Topic": rows_topic, "Score": rows_acc})
+    ui.section_header("Session summary", eyebrow="How you did")
+    ui.examples_table(
+        ["Topic", "Score", "Accuracy"],
+        [[topic, f"{c}/{n}", f"{c / n * 100:.0f}%"]
+         for topic, (c, n) in sorted(stats.items())],
+    )
 
     ranked = sorted(stats.items(), key=lambda kv: kv[1][0] / kv[1][1])
     weakest, (wc, wn) = ranked[0]
