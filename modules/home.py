@@ -5,7 +5,7 @@ from utils import ui
 
 
 def render() -> None:
-    ui.hero(
+    ui.hero_section(
         title="Magnetism Lab",
         subtitle="Interactive E&M simulations for right-hand rules, magnetic "
         "fields, and charged particle motion.",
@@ -13,6 +13,7 @@ def render() -> None:
         "magnetic field equations into visual intuition.",
         badges=["Freshman E&M", "Vector Fields", "Lorentz Force",
                 "Interactive Practice"],
+        kicker="Learn E&M by doing",
     )
 
     # --- Module cards (clickable navigation) -----------------------------

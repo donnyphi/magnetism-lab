@@ -15,16 +15,16 @@ from utils.plotting import plot_vectors
 
 # Worked examples of the standard right-handed axis cross products.
 _EXAMPLES = [
-    ("+x × +y", "+z"),
-    ("+y × +z", "+x"),
-    ("+z × +x", "+y"),
-    ("+y × +x", "-z  (swapping order flips the sign)"),
+    ("+x × +y", "+z", "Standard right-handed order"),
+    ("+y × +z", "+x", "Cycle x → y → z"),
+    ("+z × +x", "+y", "Cycle continues"),
+    ("+y × +x", "−z", "Swapping order flips the sign"),
 ]
 
 
 def render() -> None:
-    ui.section_header(
-        "Right-Hand Rule Trainer",
+    ui.page_hero(
+        "🖐️", "Right-Hand Rule Trainer",
         "Find the direction of the magnetic force on a moving charge.",
     )
     ui.formula_card(
@@ -33,33 +33,32 @@ def render() -> None:
         "The force is the charge times the cross product of velocity and field.",
     )
 
-    ui.callout(
-        "1. Point your fingers in the <b>velocity</b> direction.<br>"
-        "2. Curl them toward the <b>magnetic field</b> direction.<br>"
-        "3. Your thumb points along the <b>force</b> — for a positive charge.<br>"
-        "4. For a <b>negative</b> charge, reverse the thumb direction.",
-        kind="intuition", title="How to use your right hand",
-    )
+    ui.steps_card("How to use your right hand", [
+        "Point your fingers in the <b>velocity</b> direction.",
+        "Curl them toward the <b>magnetic field</b> direction.",
+        "Your thumb points along the <b>force</b> — for a positive charge.",
+        "For a <b>negative</b> charge, reverse the thumb direction.",
+    ])
 
     # --- Inputs ----------------------------------------------------------
-    ui.section_header("Set up the scenario")
-    c1, c2, c3 = st.columns(3)
-    charge = c1.selectbox("Charge sign", ["positive", "negative"])
-    v_dir = c2.selectbox("Velocity direction (v)", DIRECTION_LABELS, index=0)
-    b_dir = c3.selectbox("Magnetic field direction (B)", DIRECTION_LABELS, index=2)
-
-    ui.summary_chips([
-        ("Charge", "+ q" if charge == "positive" else "− q"),
-        ("Velocity", v_dir),
-        ("Field", b_dir),
-    ])
+    ui.section_header("Set up the scenario", eyebrow="Simulator")
+    with ui.control_panel():
+        c1, c2, c3 = st.columns(3)
+        charge = c1.selectbox("Charge sign", ["positive", "negative"])
+        v_dir = c2.selectbox("Velocity direction (v)", DIRECTION_LABELS, index=0)
+        b_dir = c3.selectbox("Magnetic field direction (B)", DIRECTION_LABELS, index=2)
+        ui.summary_chips([
+            ("Charge", "+ q" if charge == "positive" else "− q"),
+            ("Velocity", v_dir),
+            ("Field", b_dir),
+        ])
 
     f_dir = magnetic_force_direction(charge, v_dir, b_dir)
     zero = is_zero_force(v_dir, b_dir)
 
     # --- Predict-first mode ---------------------------------------------
     ui.section_header("Predict first, then reveal", eyebrow="Active recall")
-    ui.callout(
+    ui.callout_card(
         "Don't peek! Work out the force direction with your right hand, choose "
         "it below, then reveal the answer to check yourself.",
         kind="predict",
@@ -78,15 +77,18 @@ def render() -> None:
 
     # --- Vector plot -----------------------------------------------------
     f_vec = np.zeros(3) if zero else direction_to_vector(f_dir)
-    with ui.plot_card("3D vector view",
-                      "Velocity (blue), magnetic field (green) and force (red)."):
+    with ui.plot_shell("3D vector view",
+                       "Velocity (blue), magnetic field (green) and force (red)."):
         st.pyplot(plot_vectors(direction_to_vector(v_dir),
                                direction_to_vector(b_dir), f_vec, zero_force=zero))
 
     # --- Examples table --------------------------------------------------
-    ui.section_header("Common cross-product examples")
-    st.table({"Expression": [e[0] for e in _EXAMPLES],
-              "Result": [e[1] for e in _EXAMPLES]})
+    ui.section_header("Common cross-product examples", eyebrow="Reference")
+    ui.examples_table(
+        ["Expression", "Result", "Why"],
+        [[e[0], e[1], e[2]] for e in _EXAMPLES],
+        mono_cols=(0, 1),
+    )
 
     ui.intuition_check(
         "Why is the force sometimes zero?",
@@ -96,26 +98,37 @@ def render() -> None:
         key="rhr_zero",
     )
 
+    ui.divider()
+    ui.section_header("Next up")
+    ui.next_module_cta("Continue to Field Around a Wire  →",
+                       "🧲 Field Around a Wire")
+
 
 def _reveal(charge, v_dir, b_dir, f_dir, zero, guess) -> None:
     """Show the answer and, in predict mode, whether the guess was right."""
     if zero:
         answer_label = "zero (no force)"
-        st.success(
-            f"**Force is zero.** With v in {v_dir} and B in {b_dir}, the vectors "
-            "are parallel or anti-parallel, so sin(θ) = 0 and F = q(v × B) = 0."
+        ui.result_card(
+            True,
+            f"With v in <b>{v_dir}</b> and B in <b>{b_dir}</b>, the vectors are "
+            "parallel or anti-parallel, so sin(θ) = 0 and F = q(v × B) = <b>0</b>.",
         )
     else:
         answer_label = f_dir
-        st.success(
-            f"For a **{charge}** charge with **v = {v_dir}** and **B = {b_dir}**, "
-            f"the force points in **{f_dir}**."
+        ui.result_card(
+            True,
+            f"For a <b>{charge}</b> charge with <b>v = {v_dir}</b> and "
+            f"<b>B = {b_dir}</b>, the force points in <b>{f_dir}</b>.",
         )
 
     if guess is not None:
         if guess == answer_label:
             st.balloons()
-            st.info("✅ Nice — your prediction was correct!")
+            ui.callout_card("Nice — your prediction was correct!", kind="why",
+                            title="Prediction check")
         else:
-            st.warning(f"❌ You picked **{guess}**, but the answer is "
-                       f"**{answer_label}**. Try the hand rule again.")
+            ui.callout_card(
+                f"You picked <b>{guess}</b>, but the answer is "
+                f"<b>{answer_label}</b>. Try the hand rule again.",
+                kind="mistake", title="Prediction check",
+            )
