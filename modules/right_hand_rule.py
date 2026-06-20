@@ -33,12 +33,12 @@ def render() -> None:
         "The force is the charge times the cross product of velocity and field.",
     )
 
-    ui.note(
-        "<b>How to do it with your hand:</b><br>"
+    ui.callout(
         "1. Point your fingers in the <b>velocity</b> direction.<br>"
         "2. Curl them toward the <b>magnetic field</b> direction.<br>"
         "3. Your thumb points along the <b>force</b> — for a positive charge.<br>"
-        "4. For a <b>negative</b> charge, reverse the thumb direction."
+        "4. For a <b>negative</b> charge, reverse the thumb direction.",
+        kind="intuition", title="How to use your right hand",
     )
 
     # --- Inputs ----------------------------------------------------------
@@ -58,7 +58,12 @@ def render() -> None:
     zero = is_zero_force(v_dir, b_dir)
 
     # --- Predict-first mode ---------------------------------------------
-    ui.section_header("Predict first, then reveal")
+    ui.section_header("Predict first, then reveal", eyebrow="Active recall")
+    ui.callout(
+        "Don't peek! Work out the force direction with your right hand, choose "
+        "it below, then reveal the answer to check yourself.",
+        kind="predict",
+    )
     predict = st.toggle("Predict-first mode", value=True,
                         help="Guess the force direction before the app shows it.")
 
@@ -73,8 +78,10 @@ def render() -> None:
 
     # --- Vector plot -----------------------------------------------------
     f_vec = np.zeros(3) if zero else direction_to_vector(f_dir)
-    st.pyplot(plot_vectors(direction_to_vector(v_dir),
-                           direction_to_vector(b_dir), f_vec, zero_force=zero))
+    with ui.plot_card("3D vector view",
+                      "Velocity (blue), magnetic field (green) and force (red)."):
+        st.pyplot(plot_vectors(direction_to_vector(v_dir),
+                               direction_to_vector(b_dir), f_vec, zero_force=zero))
 
     # --- Examples table --------------------------------------------------
     ui.section_header("Common cross-product examples")

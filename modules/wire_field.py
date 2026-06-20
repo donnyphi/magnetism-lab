@@ -19,12 +19,13 @@ def render() -> None:
         "Field strength grows with current I and shrinks with distance r.",
     )
 
-    ui.note(
-        "<b>Dot / cross notation</b> shows 3D direction on flat paper:<br>"
+    ui.callout(
+        "Dot / cross notation shows 3D direction on flat paper:<br>"
         "⊙ a <b>dot</b> is an arrow tip coming <b>toward you</b> (current out of "
         "the page).<br>"
         "⊗ a <b>cross</b> is an arrow tail going <b>away from you</b> (current "
-        "into the page)."
+        "into the page).",
+        kind="intuition", title="Reading dot / cross notation",
     )
 
     # --- Inputs ----------------------------------------------------------
@@ -46,7 +47,9 @@ def render() -> None:
     B = wire_field_strength(current, radius)
     st.metric("Magnetic field strength B", f"{B * 1e6:.3f} µT", help=f"{B:.3e} T")
 
-    st.pyplot(plot_wire_field(direction))
+    with ui.plot_card("Field lines around the wire",
+                      "Arrows show the circulation direction of B."):
+        st.pyplot(plot_wire_field(direction))
 
     # --- Distance scaling mini-experiment --------------------------------
     ui.section_header(
@@ -58,12 +61,15 @@ def render() -> None:
         b_here = wire_field_strength(current, radius * factor)
         label = "B at r" if factor == 1 else f"B at {factor}r"
         col.metric(label, f"{b_here * 1e6:.3f} µT")
-    ui.note(
+    ui.callout(
         "Because <b>B ∝ 1/r</b>, doubling the distance <b>halves</b> the field "
         "and tripling it cuts the field to <b>one third</b>. It's a steady "
-        "falloff, not a sudden cutoff."
+        "falloff, not a sudden cutoff.",
+        kind="why",
     )
-    st.pyplot(plot_field_vs_distance(current))
+    with ui.plot_card("B versus distance",
+                      "The 1/r curve with r, 2r and 3r marked."):
+        st.pyplot(plot_field_vs_distance(current))
 
     # --- Interactive question -------------------------------------------
     ui.section_header("Quick check")

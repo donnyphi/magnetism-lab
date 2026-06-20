@@ -300,12 +300,16 @@ def _render_scoreboard() -> None:
     correct = sum(1 for v in results.values() if v)
     accuracy = (correct / attempted * 100) if attempted else 0.0
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Score", f"{correct} / {len(QUESTIONS)}")
-    c2.metric("Attempted", f"{attempted}")
-    c3.metric("Accuracy", f"{accuracy:.0f}%")
-    c4.metric("Streak", f"🔥 {st.session_state.p_streak}",
-              help=f"Best this session: {st.session_state.p_best_streak}")
+    ui.stat_cards([
+        {"label": "Score", "value": f"{correct} / {len(QUESTIONS)}",
+         "sub": "questions correct"},
+        {"label": "Attempted", "value": attempted, "sub": "so far",
+         "variant": "alt"},
+        {"label": "Accuracy", "value": f"{accuracy:.0f}%", "sub": "this session",
+         "variant": "cool"},
+        {"label": "Streak", "value": f"🔥 {st.session_state.p_streak}",
+         "sub": f"best: {st.session_state.p_best_streak}", "variant": "warm"},
+    ])
 
 
 def _render_question(idx: int, q: dict) -> None:
@@ -314,6 +318,10 @@ def _render_question(idx: int, q: dict) -> None:
     header = f"{DIFFICULTY_BADGE[q['difficulty']]} · {q['topic']} — {q['q']}{mark}"
 
     with st.expander(header):
+        ui.question_badges(q["difficulty"], q["topic"],
+                           extra="Numeric" if q["type"] == "num" else None)
+        st.markdown(f"**{q['q']}**")
+
         # Two-tier hint system.
         h1, h2 = st.columns(2)
         if h1.button("💡 Hint 1 (intuition)", key=f"hint1_{idx}"):
@@ -379,11 +387,15 @@ def _render_summary() -> None:
     weakest, (wc, wn) = ranked[0]
     strongest, (sc, sn) = ranked[-1]
 
-    cols = st.columns(2)
-    cols[0].success(f"💪 Strongest: **{strongest}** "
-                    f"({sc / sn * 100:.0f}%)")
-    cols[1].warning(f"📚 Needs work: **{weakest}** "
-                    f"({wc / wn * 100:.0f}%)")
-    ui.note(f"Recommended next step: revisit the <b>{TOPIC_MODULE[weakest]}</b> "
-            f"module to shore up <b>{weakest}</b>, then come back and try those "
-            "questions again.")
+    ui.stat_cards([
+        {"label": "Strongest topic", "value": strongest,
+         "sub": f"{sc / sn * 100:.0f}% correct", "variant": "cool"},
+        {"label": "Needs work", "value": weakest,
+         "sub": f"{wc / wn * 100:.0f}% correct", "variant": "warm"},
+    ])
+    ui.callout(
+        f"Recommended next step: revisit the <b>{TOPIC_MODULE[weakest]}</b> "
+        f"module to shore up <b>{weakest}</b>, then come back and try those "
+        "questions again.",
+        kind="why", title="Your personalized review",
+    )

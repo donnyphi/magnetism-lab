@@ -19,20 +19,19 @@ def render() -> None:
         "A charge moving across a uniform magnetic field travels in a circle.",
     )
 
-    ui.note(
+    ui.callout(
         "The magnetic force is <b>always perpendicular to the velocity</b>. A "
         "perpendicular force can't speed the particle up or slow it down — it "
         "only <b>changes its direction</b>. Constantly turning at a fixed speed "
-        "is exactly what circular motion is."
+        "is exactly what circular motion is.",
+        kind="intuition",
     )
 
-    col_a, col_b, col_c = st.columns(3)
-    with col_a:
-        ui.formula_card("Force", "F = |q| v B", "Magnetic force magnitude.")
-    with col_b:
-        ui.formula_card("Radius", "r = m v / (|q| B)", "Size of the circle.")
-    with col_c:
-        ui.formula_card("Period", "T = 2π m / (|q| B)", "Time for one full loop.")
+    ui.formula_grid([
+        ("Force", "F = |q| v B", "Magnetic force magnitude."),
+        ("Radius", "r = m v / (|q| B)", "Size of the circle."),
+        ("Period", "T = 2π m / (|q| B)", "Time for one full loop."),
+    ])
 
     # --- Inputs ----------------------------------------------------------
     ui.section_header("Set the particle")
@@ -65,7 +64,9 @@ def render() -> None:
     m3.metric("Period T", f"{T:.3f} s")
     m4.metric("Angular freq. ω", f"{omega:.3f} rad/s")
 
-    st.pyplot(plot_particle_circle(r, charge_sign))
+    with ui.plot_card("Orbit",
+                      "Motion arrow, center and radius line for the circular path."):
+        st.pyplot(plot_particle_circle(r, charge_sign))
 
     # --- Compare mode ----------------------------------------------------
     ui.section_header(
@@ -84,7 +85,9 @@ def render() -> None:
         ratio = r2 / r if r else float("nan")
         st.caption(f"That's **{ratio:.2f}×** the original radius.")
     with cc2:
-        st.pyplot(plot_orbit_comparison(r, r2, "current", label2, charge_sign))
+        with ui.plot_card("Orbit comparison",
+                          "Solid = current settings, dashed = changed setting."):
+            st.pyplot(plot_orbit_comparison(r, r2, "current", label2, charge_sign))
 
     # --- Intuition cards -------------------------------------------------
     ui.section_header("Intuition")
