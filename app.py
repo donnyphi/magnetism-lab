@@ -5,7 +5,15 @@ from modules import charged_particle, home, practice, right_hand_rule, wire_fiel
 from utils import ui
 
 st.set_page_config(page_title="Magnetism Lab", page_icon="🧲", layout="wide")
-ui.inject_global_styles()
+
+# Inject the global stylesheet. The helper is exposed under both
+# `inject_global_styles` and the older `inject_global_css` name, so resolve it
+# defensively to stay robust across cached deployments.
+_inject_styles = getattr(ui, "inject_global_styles", None) or getattr(
+    ui, "inject_global_css", None
+)
+if _inject_styles is not None:
+    _inject_styles()
 
 # Each page maps a label (shown in the sidebar) to the module that renders it.
 PAGES = {
